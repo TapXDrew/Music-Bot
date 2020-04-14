@@ -15,7 +15,7 @@ from utils.user import User
 from utils.queues import SavedQueues
 
 # Changing our current working directory so downloads will download to an audio folder
-Path(os.getcwd()+"/audio_cache").cd()
+Path(os.getcwd() + "/audio_cache").cd()
 
 
 class Queue:
@@ -24,6 +24,7 @@ class Queue:
     -----
     Create an object containing the next song to be streamed in discord
     """
+
     def __init__(self):
         """
         Initializes the queue list
@@ -84,7 +85,7 @@ class Queue:
         Finds an item from the queue based on the index
         """
         if len(self.queue) >= place:
-            return self.queue[place-1]
+            return self.queue[place - 1]
         return False
 
 
@@ -107,7 +108,10 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
     async def download(cls, url, *, loop=None, stream=False, ctx):
         youtube_dl.utils.bug_reports_message = lambda: ''
         ffmpeg_options = {'options': '-vn'}
-        ytdl_format_options = {'format': 'bestaudio/best', 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s', 'restrictfilenames': True, 'noplaylist': True, 'nocheckcertificate': True, 'ignoreerrors': False, 'logtostderr': False, 'quiet': True, 'no_warnings': True, 'default_search': 'auto', 'source_address': '0.0.0.0'}
+        ytdl_format_options = {'format': 'bestaudio/best', 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+                               'restrictfilenames': True, 'noplaylist': True, 'nocheckcertificate': True,
+                               'ignoreerrors': False, 'logtostderr': False, 'quiet': True, 'no_warnings': True,
+                               'default_search': 'auto', 'source_address': '0.0.0.0'}
         ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
@@ -126,6 +130,7 @@ class Music(commands.Cog):
     """
     Command file to be loaded into a discord bot
     """
+
     def __init__(self, bot):
         """
         Initializes the bot to be used for music
@@ -138,6 +143,8 @@ class Music(commands.Cog):
 
     def cog_check(self, ctx):
         self.user = User(bot=self.bot, ctx=ctx)
+        if 'ban' in self.user.perms:
+            return False
         return True
 
     # Extra Functions
@@ -195,7 +202,8 @@ class Music(commands.Cog):
                     await self.stream(ctx=ctx, url=random.choice(songs), queue_type='Auto')
                     return
                 else:  # There is still a song on queue so we will now play it
-                    self.players[ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
+                    self.players[
+                        ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
                     ctx.guild.voice_client.play(player)  # Plays audio in the voice chat
                     embed = discord.Embed(color=discord.Color.green())
                     embed.add_field(name=f"{player.title} is now playing!", value=f"Next Up: {queue.next_up()}")
@@ -208,22 +216,26 @@ class Music(commands.Cog):
         vote = 1
         if vote_type == "Skip":
             embed = discord.Embed(title=f"Vote Skip started", color=discord.Color.orange())
-            embed.add_field(name="React with :thumbsup: to skip the song, :thumbsdown: to continue", value=f"Majority wins. You have 30 seconds")
+            embed.add_field(name="React with :thumbsup: to skip the song, :thumbsdown: to continue",
+                            value=f"Majority wins. You have 30 seconds")
             embed.set_footer(text=f"In the event of a tie, the song will NOT be skipped")
             message = await ctx.send(embed=embed)
         elif vote_type == "Queue Remove":
             embed = discord.Embed(title=f"Vote to remove an item from queue", color=discord.Color.orange())
-            embed.add_field(name=f"React with :thumbsup: to remove `{player.title}`, :thumbsdown: to continue", value=f"Majority wins. You have 30 seconds")
+            embed.add_field(name=f"React with :thumbsup: to remove `{player.title}`, :thumbsdown: to continue",
+                            value=f"Majority wins. You have 30 seconds")
             embed.set_footer(text=f"In the event of a tie, the song will NOT be removed")
             message = await ctx.send(embed=embed)
         elif vote_type == "Queue Clear":
             embed = discord.Embed(title=f"Vote to clear the queue", color=discord.Color.orange())
-            embed.add_field(name=f"React with :thumbsup: to remove `{player.title}`, :thumbsdown: to continue", value=f"Majority wins. You have 30 seconds")
+            embed.add_field(name=f"React with :thumbsup: to remove `{player.title}`, :thumbsdown: to continue",
+                            value=f"Majority wins. You have 30 seconds")
             embed.set_footer(text=f"In the event of a tie, the queue will NOT be cleared")
             message = await ctx.send(embed=embed)
         elif vote_type == "Stop":
             embed = discord.Embed(title=f"Vote to stop all music", color=discord.Color.orange())
-            embed.add_field(name=f"React with :thumbsup: to stop the music, :thumbsdown: to continue listening", value=f"Majority wins. You have 30 seconds")
+            embed.add_field(name=f"React with :thumbsup: to stop the music, :thumbsdown: to continue listening",
+                            value=f"Majority wins. You have 30 seconds")
             embed.set_footer(text=f"In the event of a tie, the music will continue")
             message = await ctx.send(embed=embed)
         else:
@@ -266,7 +278,8 @@ class Music(commands.Cog):
             return await channel.connect()
         else:
             embed = discord.Embed(title="Failed to join a voice channel", color=discord.Color.red())
-            embed.add_field(name="I cant play music if i cant talk!", value="Please join a voice channel before trying to play music!")
+            embed.add_field(name="I cant play music if i cant talk!",
+                            value="Please join a voice channel before trying to play music!")
             await ctx.send(embed=embed)
 
     @commands.command(name='Leave')
@@ -357,7 +370,8 @@ class Music(commands.Cog):
         player = self.players[ctx.guild.id]
         ctx.message.guild.voice_client.pause()  # Pauses the audio stream
         embed = discord.Embed(color=discord.Color.green())
-        embed.add_field(name=f"Paused {player.title}", value=f"{self.bot.command_prefix}{ctx.command.qualified_name} to resume the song")
+        embed.add_field(name=f"Paused {player.title}",
+                        value=f"{self.bot.command_prefix}{ctx.command.qualified_name} to resume the song")
         await ctx.send(embed=embed)
 
     @commands.command(name='Resume')
@@ -421,7 +435,7 @@ class Music(commands.Cog):
         player = self.players[ctx.guild.id]
         if vol is None:
             return await ctx.send(f"Player volume set to {player.volume}")
-        player.volume = float(vol/100)
+        player.volume = float(vol / 100)
         return await ctx.send(f"Set the volume to {vol}%")
 
     @commands.command(name='NowPlaying', aliases=['Current'])
@@ -433,7 +447,8 @@ class Music(commands.Cog):
         player = self.players[ctx.guild.id]
         queue = self.queues[ctx.guild.id]
         embed = discord.Embed(title='Song Information', color=discord.Color.green())
-        embed.add_field(name=f"Current Song: {player.title} | Requested by *{player.requester}*", value=f"Next Up: {queue.next_up()}")
+        embed.add_field(name=f"Current Song: {player.title} | Requested by *{player.requester}*",
+                        value=f"Next Up: {queue.next_up()}")
         embed.add_field(name=f"Song Artist", value=player.data['artist'])
         embed.set_footer(text=f"Queue Length: {len(queue.queue)}")
         await ctx.send(embed=embed)
@@ -452,7 +467,8 @@ class Music(commands.Cog):
         stop = "\N{BLACK SQUARE FOR STOP}"
         right = "\N{BLACK RIGHT-POINTING TRIANGLE}"
 
-        total = [f"{enum+1}. {song.title} - Requested by *{song.requester}*" for enum, song in enumerate(queue.queue[::-1])]
+        total = [f"{enum + 1}. {song.title} - Requested by *{song.requester}*" for enum, song in
+                 enumerate(queue.queue[::-1])]
 
         if len(total) > 10:
             embed = discord.Embed(color=discord.Color.teal())
@@ -464,7 +480,9 @@ class Music(commands.Cog):
             await msg.add_reaction(right)
 
             while True:
-                react, user = await self.bot.wait_for('reaction_add', check=lambda u_react, u_user: u_user.id == ctx.author.id, timeout=20.0)
+                react, user = await self.bot.wait_for('reaction_add',
+                                                      check=lambda u_react, u_user: u_user.id == ctx.author.id,
+                                                      timeout=20.0)
 
                 if react.emoji == left:
                     first -= 10
@@ -498,7 +516,8 @@ class Music(commands.Cog):
         else:
             if len(total) == 0:
                 embed = discord.Embed(color=discord.Color.teal())
-                embed.add_field(name=f"Music Queue", value=f"There are currently no songs in the queue! Add one using the `{self.bot.command_prefix}play`, `{self.bot.command_prefix}url` or `{self.bot.command_prefix}stream` commands!")
+                embed.add_field(name=f"Music Queue",
+                                value=f"There are currently no songs in the queue! Add one using the `{self.bot.command_prefix}play`, `{self.bot.command_prefix}url` or `{self.bot.command_prefix}stream` commands!")
                 embed.set_footer(text="Total: 0 | Page 1/1")
                 await ctx.send(embed=embed)
             else:
@@ -519,7 +538,8 @@ class Music(commands.Cog):
         song = queue.find(song_num)
         if not song:
             embed = discord.Embed(title="Failed to remove song", color=discord.Color.red())
-            embed.add_field(name="Sorry but I could not find that song!", value="Please make sure that you used the correct song ID!")
+            embed.add_field(name="Sorry but I could not find that song!",
+                            value="Please make sure that you used the correct song ID!")
             embed.set_footer(text=f"Example: {self.bot.command_prefix}{ctx.command.qualified_name} 1")
             return await ctx.send(embed=embed)
 
@@ -553,12 +573,14 @@ class Music(commands.Cog):
             for song in range(len(queue.queue)):
                 queue.remove(song)
             embed = discord.Embed(title="The queue has been cleared!", color=discord.Color.green())
-            embed.add_field(name="The current song will continue to be played", value=f"You can stop it with the `{self.bot.command_prefix}stop` or `{self.bot.command_prefix}skip` commands")
+            embed.add_field(name="The current song will continue to be played",
+                            value=f"You can stop it with the `{self.bot.command_prefix}stop` or `{self.bot.command_prefix}skip` commands")
             embed.set_footer(text=f"After this song is finished, an auto playlist will start")
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(title="The queue stays!", color=discord.Color.green())
-            embed.add_field(name="The queue may not be cleared but at least you have some 🎵music🎵 playing", value=f"If you have your own song in the queue you wish to remove, use {self.bot.command_prefix}remove <song_id>")
+            embed.add_field(name="The queue may not be cleared but at least you have some 🎵music🎵 playing",
+                            value=f"If you have your own song in the queue you wish to remove, use {self.bot.command_prefix}remove <song_id>")
             await ctx.send(embed=embed)
 
     @commands.command(name='Save')
@@ -666,13 +688,15 @@ class Music(commands.Cog):
             player = self.players[ctx.guild.id]
             player.repeat = not player.repeat
             embed = discord.Embed(title="Song Repeat has been toggled!", color=discord.Color.green())
-            embed.add_field(name=f"Song repeat is set to {player.repeat}!", value="The current song will now be repeated" if player.repeat else "The song will no longer repeat itself")
+            embed.add_field(name=f"Song repeat is set to {player.repeat}!",
+                            value="The current song will now be repeated" if player.repeat else "The song will no longer repeat itself")
             await ctx.send(embed=embed)
         elif repeat_type.lower() == 'queue':
             queue = self.queues[ctx.guild.id]
             queue.repeat = not queue.repeat
             embed = discord.Embed(title="Queue Repeat has been toggled!", color=discord.Color.green())
-            embed.add_field(name=f"Queue repeat is set to {queue.repeat}!", value="The current song and the queue will now be repeated" if queue.repeat else "The queue will no longer repeat itself")
+            embed.add_field(name=f"Queue repeat is set to {queue.repeat}!",
+                            value="The current song and the queue will now be repeated" if queue.repeat else "The queue will no longer repeat itself")
             await ctx.send(embed=embed)
         else:
             return
@@ -686,7 +710,8 @@ class Music(commands.Cog):
         queue = self.queues[ctx.guild.id]
         random.shuffle(queue.queue)
         embed = discord.Embed(name="Shuffled!", color=discord.Color.green())
-        embed.add_field(name="I have shuffled the queue!", value=f"Use `{self.bot.command_prefix}queue` to view the new queue order")
+        embed.add_field(name="I have shuffled the queue!",
+                        value=f"Use `{self.bot.command_prefix}queue` to view the new queue order")
         await ctx.send(embed=embed)
 
     @load.before_invoke
@@ -720,7 +745,7 @@ class Music(commands.Cog):
 
     @commands.command(name='Override', aliases=['add_perm'])
     @commands.has_permissions(manage_guild=True)
-    async def override(self, ctx, perm, member: discord.Member=None):
+    async def override(self, ctx, perm, member: discord.Member = None):
         """
         Test command to add permission overrides suck as skip, queue clear, ect
         :param ctx: Information on the context of where the command was called
@@ -735,7 +760,8 @@ class Music(commands.Cog):
         if added:
             await ctx.send(f"Ok! {member.name} has the '{perm.lower().capitalize()}' override permission!")
         else:
-            await ctx.send(f'Sorry, cant do that...Use `{self.bot.command_prefix}ValidPermissions` to view all valid permission names')
+            await ctx.send(
+                f'Sorry, cant do that...Use `{self.bot.command_prefix}ValidPermissions` to view all valid permission names')
 
 
 def setup(bot):

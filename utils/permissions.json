@@ -1,6 +1,7 @@
 {
   "Permissions": {
     "CommandBypasses": [
+      "ban",
       "skip",
       "stop",
       "seek",
