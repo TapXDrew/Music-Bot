@@ -1,0 +1,17 @@
+{
+  "Permissions": {
+    "CommandBypasses": [
+      "skip",
+      "stop",
+      "seek",
+      "volume",
+      "queueremove",
+      "queueclear",
+      "queuerepeat",
+      "queueshuffle",
+      "queuesave",
+      "queueload",
+      "queuedelete"
+    ]
+  }
+}

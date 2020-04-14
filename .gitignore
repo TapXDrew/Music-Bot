@@ -1,0 +1,5 @@
+audio_cache
+.idea
+__pycache__
+config.json
+upload_audio_files
