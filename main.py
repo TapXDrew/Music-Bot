@@ -8,12 +8,14 @@ from discord.ext import commands
 config = json.load(open('config\\config.json'))
 
 bot = commands.AutoShardedBot(command_prefix=config['bot_prefix'], case_insensitive=True)
+bot.remove_command('help')
 
 bot.home_dir = os.getcwd()
 bot.prefix = config['bot_prefix']
 bot.config = json.load(open('config\\config.json'))
 initial_extensions = [
                     "cogs.music",
+                    "cogs.help"
                     ]
 
 if __name__ == '__main__':
