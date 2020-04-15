@@ -23,6 +23,8 @@ class Help(commands.Cog):
         if not command:
             embed = discord.Embed(title='Help', color=discord.Color.green())
             for command in self.bot.commands:
+                if command.name in ['jishaku', 'help']:
+                    continue
                 embed.add_field(name=command.qualified_name, value=command.help, inline=False)
             await ctx.send(embed=embed)
         else:
