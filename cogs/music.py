@@ -263,7 +263,7 @@ class Music(commands.Cog):
         return False
 
     # Commands
-    @commands.command(name='Join', aliases=['summon'])
+    @commands.command(name='Join', help="Joins the bot to either your voice channel or a specified channel", aliases=['summon'])
     async def join(self, ctx, channel: discord.VoiceChannel = None):
         """
         Joins the voice channel that the author is in or, if specified, joins the channel specified in the channel param
@@ -282,7 +282,7 @@ class Music(commands.Cog):
                             value="Please join a voice channel before trying to play music!")
             await ctx.send(embed=embed)
 
-    @commands.command(name='Leave')
+    @commands.command(name='Leave', help="Leaves the current voice channel")
     async def leave(self, ctx):
         """
         Leaves the current voice channel if the bot is in one
@@ -291,7 +291,7 @@ class Music(commands.Cog):
         if ctx.guild.voice_client:  # Checks if the bot is already in a voice channel, if so we leave it
             await ctx.guild.voice_client.disconnect()
 
-    @commands.command(name='Play', aliases=['p', 'Song', 'Sing'])
+    @commands.command(name='Play',  help="Plays a specified song by song name", aliases=['p', 'Song', 'Sing'])
     async def play(self, ctx, *, song=None, queue_type='Player'):
         """
         Adds the specified song to the queue to be played
@@ -315,7 +315,7 @@ class Music(commands.Cog):
 
         return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
 
-    @commands.command(name='URL')
+    @commands.command(name='URL', help="Plays a specified song by URL")
     async def url(self, ctx, *, url, queue_type='Player'):
         """
         Adds the specified url to the queue to be played
@@ -338,7 +338,7 @@ class Music(commands.Cog):
 
         return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
 
-    @commands.command(name='Stream')
+    @commands.command(name='Stream', help="Streams an audio source from a URL")
     async def stream(self, ctx, *, url, queue_type='Player'):
         """
         Adds the specified url to the queue to be played, only difference from url() and play() is that this does not pre-download songs to be played, it streams from an audio source
@@ -361,7 +361,7 @@ class Music(commands.Cog):
 
         return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
 
-    @commands.command(name='Pause')
+    @commands.command(name='Pause', help="Pauses the current song")
     async def pause(self, ctx):
         """
         Pauses the current servers audio stream
@@ -374,7 +374,7 @@ class Music(commands.Cog):
                         value=f"{self.bot.command_prefix}{ctx.command.qualified_name} to resume the song")
         await ctx.send(embed=embed)
 
-    @commands.command(name='Resume')
+    @commands.command(name='Resume', help="Resumes the current song")
     async def resume(self, ctx):
         """
         Resumes the current servers audio stream
@@ -384,7 +384,7 @@ class Music(commands.Cog):
         ctx.message.guild.voice_client.resume()  # Resumes the audio stream
         await ctx.send(f"Resumed {player.title}")
 
-    @commands.command(name='Skip')
+    @commands.command(name='Skip', help="Skips the current song")
     async def skip(self, ctx):
         """
         Skips the current song being played
@@ -402,7 +402,7 @@ class Music(commands.Cog):
         else:
             await ctx.send(f"The people have spoken! We will continue playing {player.title}!")
 
-    @commands.command(name='Stop', aliases=['Quit'])
+    @commands.command(name='Stop', help="Skips the current song and cancels the next song from playing", aliases=['Quit'])
     async def stop(self, ctx):
         """
         Stops all music
@@ -421,7 +421,7 @@ class Music(commands.Cog):
         else:
             await ctx.send(f"You cant stop me! No one can!!!")
 
-    @commands.command(name='Volume', aliases=['Vol'])
+    @commands.command(name='Volume', help="Changes the bots player volume", aliases=['Vol'])
     async def volume(self, ctx, vol: int = None):
         """
         Sets the volume for the player
@@ -438,7 +438,7 @@ class Music(commands.Cog):
         player.volume = float(vol / 100)
         return await ctx.send(f"Set the volume to {vol}%")
 
-    @commands.command(name='NowPlaying', aliases=['Current'])
+    @commands.command(name='NowPlaying', help="Information on the current song", aliases=['Current'])
     async def nowplaying(self, ctx):
         """
         Displays the current song name along with the next song in the queue
@@ -453,7 +453,7 @@ class Music(commands.Cog):
         embed.set_footer(text=f"Queue Length: {len(queue.queue)}")
         await ctx.send(embed=embed)
 
-    @commands.command(name='Queue', aliases=[])  # Very messy, needs to be cleaned up. Maybe with a pagination class
+    @commands.command(name='Queue', help="Displays the current song queue", aliases=[])  # Very messy, needs to be cleaned up. Maybe with a pagination class
     async def queue(self, ctx):
         """Displays the current song queue in a paginated embed
         :param ctx: Information on the context of where the command was called
@@ -526,7 +526,7 @@ class Music(commands.Cog):
                 embed.set_footer(text=f"Total: {len(total)} | Page {curr_page}/{math.ceil(len(total) / 10)}")
                 await ctx.send(embed=embed)
 
-    @commands.command(name='Remove')
+    @commands.command(name='Remove', help="Removes a song from the current queue")
     async def remove(self, ctx, song_num: int):
         """
         Removes an item from the queue
@@ -558,7 +558,7 @@ class Music(commands.Cog):
             embed.add_field(name="The people have spoken!", value=f"{song.title} stays!")
             return await ctx.send(embed=embed)
 
-    @commands.command(name="Clear", aliases=['qClear'])
+    @commands.command(name="Clear", help="Clears the current song queue", aliases=['qClear'])
     async def clear(self, ctx):
         """
         Clears the queue of all songs
@@ -583,7 +583,7 @@ class Music(commands.Cog):
                             value=f"If you have your own song in the queue you wish to remove, use {self.bot.command_prefix}remove <song_id>")
             await ctx.send(embed=embed)
 
-    @commands.command(name='Save')
+    @commands.command(name='Save', help="Saves the queue to be loaded later")
     async def save(self, ctx):
         """
         Saves the current queue into the servers saved queue list
@@ -597,7 +597,7 @@ class Music(commands.Cog):
         saved.update(queues)
         await ctx.send(f"I saved the queue for you! Check it out with `{self.bot.command_prefix}queues`")
 
-    @commands.command(name='Delete')
+    @commands.command(name='Delete', help="Deletes a saved audio queue")
     async def delete(self, ctx, qid: int):
         """
         Deletes a queue from the list of saved queues
@@ -610,7 +610,7 @@ class Music(commands.Cog):
         saved.update(queues)
         await ctx.send(f"Ok, I removed that from the saved queue list")
 
-    @commands.command(name='Load')
+    @commands.command(name='Load', help="Loads a saved audio queue")
     async def load(self, ctx, queue_id: int):
         """
         Loads the specified queue into the current queue
@@ -629,7 +629,7 @@ class Music(commands.Cog):
         await ctx.send(f"Queue Loaded!")
         return await self.play_next_song(ctx, 'Auto')  # Starts to play queued songs
 
-    @commands.command(name='Saved', aliases=['Queues'])
+    @commands.command(name='Saved', help="Shows all saved audio queues", aliases=['Queues'])
     async def saved(self, ctx):
         """
         List of all saved queues the server has
@@ -677,7 +677,7 @@ class Music(commands.Cog):
             await message.edit(embed=embed)
         await react.remove(ctx.author)
 
-    @commands.command(name='Repeat')
+    @commands.command(name='Repeat', help="Lets the user either repeat a song or the current queue")
     async def repeat(self, ctx, *, repeat_type='song'):
         """
         Plays the queue on loop, including the current song
@@ -701,7 +701,7 @@ class Music(commands.Cog):
         else:
             return
 
-    @commands.command(name='Shuffle')
+    @commands.command(name='Shuffle', help="Shuffles the current queue")
     async def shuffle(self, ctx):
         """
         Shuffles the current queue
@@ -743,7 +743,7 @@ class Music(commands.Cog):
         if not ctx.message.guild.voice_client:
             await self.join(ctx)
 
-    @commands.command(name='Override', aliases=['add_perm'])
+    @commands.command(name='Override', help="Adds permission overrides to a specific user", aliases=['add_perm'])
     @commands.has_permissions(manage_guild=True)
     async def override(self, ctx, perm, member: discord.Member = None):
         """
