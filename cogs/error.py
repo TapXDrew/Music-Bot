@@ -1,7 +1,6 @@
 import traceback
 import sys
 from discord.ext import commands
-import discord
 
 
 class CommandErrorHandler(commands.Cog):
@@ -10,9 +9,11 @@ class CommandErrorHandler(commands.Cog):
     
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        """The event triggered when an error is raised while invoking a command.
-        ctx   : Context
-        error : Exception"""
+        """
+        Handles errors raised while executing a command
+        :param ctx: Information on the context of where the command was called
+        :param error: Exception
+        """
 
         if hasattr(ctx.command, 'on_error'):
             return
@@ -33,7 +34,7 @@ class CommandErrorHandler(commands.Cog):
                 pass
 
         elif isinstance(error, commands.BadArgument) or isinstance(error, commands.MissingRequiredArgument) or isinstance(error, commands.UserInputError):
-            return await ctx.send(f"Invalid Command Usage! `{self.bot.prefix}{ctx.command.qualified_name} {' '.join(ctx.command.clean_params.keys())}`\nUse `{self.bot.prefix}help {ctx.command.qualified_name}`")
+            return await ctx.send(f"Invalid Command Usage! `{self.bot.command_prefix}{ctx.command.qualified_name} {' '.join(ctx.command.clean_params.keys())}`\nUse `{self.bot.command_prefix}Help {ctx.command.qualified_name}`")
             
         print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
