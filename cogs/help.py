@@ -13,7 +13,7 @@ class Help(commands.Cog):
         """
         self.bot = bot  # Lets us use the bot in various other parts of the bot to access information like the voice state of the bot
 
-    @commands.command(name='Help', help="The command you are looking at", usage="!help [command]")
+    @commands.command(name='Help', help="The command you are looking at", usage="Help [command]")
     async def help(self, ctx, search_command=None):
         """
         Help command shows all other commands
@@ -23,9 +23,10 @@ class Help(commands.Cog):
         if not search_command:
             embed = discord.Embed(title='Help', color=discord.Color.green())
             for command in self.bot.commands:
-                if command.name in ['jishaku', 'Help'] or command.hidden:
+                if command.name in ['jishaku'] or command.hidden:
                     continue
                 embed.add_field(name=command.qualified_name, value=command.help, inline=False)
+            embed.set_footer(text="<> are required command parameters while [] is optional")
             await ctx.send(embed=embed)
         else:
             for command in self.bot.commands:
@@ -34,7 +35,8 @@ class Help(commands.Cog):
                     embed.add_field(name="Prefix", value=self.bot.command_prefix, inline=False)
                     embed.add_field(name="Help", value=command.help, inline=False)
                     embed.add_field(name="Usage", value=self.bot.command_prefix+command.usage, inline=False)
-                    embed.add_field(name="Aliases", value=', '.join(command.aliases), inline=False)
+                    embed.add_field(name="Aliases", value=', '.join(command.aliases) if command.aliases else "No Aliases", inline=False)
+                    embed.set_footer(text="<> are required command parameters while [] is optional")
                     return await ctx.send(embed=embed)
             await ctx.send("Sorry but I could not find that command!")
 

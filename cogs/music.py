@@ -50,12 +50,6 @@ class Queue:
             return removed
         return False
 
-    def list_queue(self):
-        """
-        Returns information on the current queue
-        """
-        return self.queue
-
     def next_up(self):
         """
         Returns the next song in the queue
@@ -172,6 +166,8 @@ class Music(commands.Cog):
         """
         queue = self.queues[ctx.guild.id]  # Gets the current servers queue
         player = self.players[ctx.guild.id]  # Current player for the guild
+        if not ctx.message.guild.voice_client:
+            return
         if ctx.message.guild.voice_client.is_playing() or ctx.message.guild.voice_client.is_paused() and queue_type == 'Player':  # Checking if we send a message saying that the song is queued or will now play
             embed = discord.Embed(color=discord.Color.green())
             embed.add_field(name=f"Song added to the queue", value=f"{queue.just_added()} has been added to the queue")
@@ -179,7 +175,7 @@ class Music(commands.Cog):
             await ctx.send(embed=embed)
         while True:
             await asyncio.sleep(2)
-            if ctx.message.guild.voice_client and ctx.message.guild.voice_client.is_playing() or ctx.message.guild.voice_client and ctx.message.guild.voice_client.is_paused():  # If the bot is currently playing a song or has a paused song, then we wait 5 seconds then check again
+            if ctx.message.guild.voice_client.is_playing() or ctx.message.guild.voice_client.is_paused():  # If the bot is currently playing a song or has a paused song, then we wait 5 seconds then check again
                 await asyncio.sleep(3)
                 continue
             else:
@@ -198,12 +194,14 @@ class Music(commands.Cog):
                 if not player:  # If there is no next song, we auto play music
                     with open('..\\config\\_autoplaylist.txt', 'r+') as playlist:
                         songs = [song.strip() for song in playlist.readlines()]
-                    ctx.author = None
-                    await self.stream(ctx=ctx, url=random.choice(songs), queue_type='Auto')
+                    try:
+                        ctx.author = None
+                        await self.stream(ctx=ctx, url=random.choice(songs), queue_type='Auto')
+                    except youtube_dl.utils.DownloadError:
+                        continue
                     return
                 else:  # There is still a song on queue so we will now play it
-                    self.players[
-                        ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
+                    self.players[ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
                     ctx.guild.voice_client.play(player)  # Plays audio in the voice chat
                     embed = discord.Embed(color=discord.Color.green())
                     embed.add_field(name=f"{player.title} is now playing!", value=f"Next Up: {queue.next_up()}")
@@ -595,7 +593,7 @@ class Music(commands.Cog):
         queues = eval(saved.get_saved_queues())  # Get our saved queues
         queues.update({f'{len(queues.keys())}': [player.title] + [song.title for song in queue.queue]})
         saved.update(queues)
-        await ctx.send(f"I saved the queue for you! Check it out with `{self.bot.command_prefix}queues`")
+        await ctx.send(f"I saved the queue for you! Check it out with `{self.bot.command_prefix}Saved`")
 
     @commands.command(name='Delete', help="Deletes a saved audio queue", usage="Delete <ID>")
     async def delete(self, ctx, qid: int):
@@ -619,13 +617,22 @@ class Music(commands.Cog):
         """
         saved = SavedQueues(bot=self.bot, ctx=ctx)
         queues = eval(saved.get_saved_queues())
-        await ctx.send(f"Loading Queue...")
+        try:
+            queue_to_load = queues[str(queue_id - 1)]
+            message = await ctx.send(f"Loading Queue `{queue_id}`\n0% Done")
+        except KeyError:
+            return await ctx.send(f"Sorry but that queue does not seem to exist! Use `{self.bot.command_prefix}Saved` to view a list of all saved queues")
+        percent = 0
+        percent_per_song = 100/len(queue_to_load)
         async with ctx.typing():
-            for song in queues[str(queue_id - 1)]:
+            for song in queue_to_load:
                 result = self.get_song(song)  # Gets a video ID for the song
                 player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx)  # Creates a player
                 queue = self.queues[ctx.guild.id]
                 queue.put(player)  # Adds a song to the servers queue system
+                percent += percent_per_song
+                await message.edit(content=f"Loading Queue...\n{str(percent)[:4]}% Done")
+
         await ctx.send(f"Queue Loaded!")
         return await self.play_next_song(ctx, 'Auto')  # Starts to play queued songs
 
@@ -638,6 +645,10 @@ class Music(commands.Cog):
         async with ctx.typing():
             saved = SavedQueues(bot=self.bot, ctx=ctx)
             queues = eval(saved.get_saved_queues())
+
+            if not queues:
+                return await ctx.send(f"You have no saved queues! Save one with `{self.bot.command_prefix}Save`")
+
             saved_queues = []
             current_page = 0
             left = "\N{BLACK LEFT-POINTING TRIANGLE}"

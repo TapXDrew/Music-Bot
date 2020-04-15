@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 import sys
 from discord.ext import commands
@@ -18,7 +19,7 @@ class CommandErrorHandler(commands.Cog):
         if hasattr(ctx.command, 'on_error'):
             return
         
-        ignored = (commands.CommandNotFound,)
+        ignored = (commands.CommandNotFound, asyncio.exceptions.TimeoutError)
         error = getattr(error, 'original', error)
         
         if isinstance(error, ignored):
@@ -35,7 +36,10 @@ class CommandErrorHandler(commands.Cog):
 
         elif isinstance(error, commands.BadArgument) or isinstance(error, commands.MissingRequiredArgument) or isinstance(error, commands.UserInputError):
             return await ctx.send(f"Invalid Command Usage! `{self.bot.command_prefix}{ctx.command.qualified_name} {' '.join(ctx.command.clean_params.keys())}`\nUse `{self.bot.command_prefix}Help {ctx.command.qualified_name}`")
-            
+
+        elif isinstance(error, TypeError) and ctx.command.name in ['Play', 'Stream', 'URL']:
+            return await ctx.send("Failed to add a song to the queue")
+
         print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
