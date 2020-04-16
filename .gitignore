@@ -1,3 +1,7 @@
 .idea
 __pycache__
+audio_cache
 config.json
+*.db
+*.webm
+
