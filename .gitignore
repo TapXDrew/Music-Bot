@@ -3,6 +3,8 @@ __pycache__
 audio_cache
 config.json
 databases
+permissions.db
+saved_queues.db
 *.db
 *.webm
 
