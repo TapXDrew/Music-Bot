@@ -59,10 +59,12 @@ class User:
         self._get_user_info()
 
     def add_permission(self, permission):
-        if permission.lower() not in perms['Permissions']['CommandBypasses']:
+        if permission.lower() not in perms['Permissions']['CommandBypasses'].keys():
             return False
+        if permission.lower() in self.perms:
+            return True
 
-        new_perms = (self.permissions + ' ' + permission) if len(self.permissions) > 2 else permission
+        new_perms = (self.permissions + ' ' + permission.lower()) if len(self.permissions) > 2 else permission.lower()
 
         query = f"UPDATE {TABLE} SET permissions = ? WHERE id = ?"
         self.cursor.execute(query, (new_perms, self.user.id))
