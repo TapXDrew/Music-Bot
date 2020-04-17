@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import traceback
@@ -7,21 +6,21 @@ import discord
 from discord.ext import commands
 
 config = json.load(open('config\\config.json'))
-initial_extensions = [
-            "cogs.music",  # All music related commands
-            "cogs.help",  # The help command
-            "cogs.error"  # Error catcher
-        ]
+initial_extensions = ["cogs.music", "cogs.help", "cogs.error"]
 
 
-class Bot(commands.AutoShardedBot):
+class DiscordBot(commands.AutoShardedBot):
     def __init__(self):
-        super().__init__(command_prefix=commands.when_mentioned_or(config['bot_prefix']), description="A simple music bot in Discord.PY")
+        super().__init__(command_prefix="?")
+        self.remove_command('help')
 
         self.home_dir = os.getcwd()
+        self.prefix = config['bot_prefix']
         self.config = json.load(open('config\\config.json'))
+        self.load_extensions()
 
-        self.remove_command('help')
+    async def on_message(self, message):
+        await self.process_commands(message)
 
     async def on_ready(self):
         print("------------------------------------")
@@ -30,23 +29,16 @@ class Bot(commands.AutoShardedBot):
         print("Discord Version: " + discord.__version__)
         print("------------------------------------")
 
-    def load_commands(self, cogs):
-        for extension in cogs:
+    def load_extensions(self):
+        for extension in initial_extensions:
             try:
-                self.load_extension(extension)
-            except Exception as e:
+                self.add_cog(extension)
+            except Exception:
                 print(f"Failed to load extension {extension}.")
                 traceback.print_exc()
-        # Optional, will need to pip-install
-        self.load_extension("jishaku")
-
-
-async def run():
-    bot = Bot()
-    bot.load_commands(initial_extensions)
-    await bot.start(config['bot_token'])
+        self.add_cog("jishaku")
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run())
+    bot = DiscordBot()
+    bot.run(config['bot_token'])
