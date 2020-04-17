@@ -240,7 +240,7 @@ class Music(commands.Cog):
                         songs = [song.strip() for song in playlist.readlines()]
                     try:
                         ctx.author = None
-                        await self.play(ctx=ctx, url=random.choice(songs), queue_type='Auto')
+                        await self.play(ctx=ctx, song=random.choice(songs), queue_type='Auto')
                     except youtube_dl.utils.DownloadError:
                         continue
                     return
@@ -380,11 +380,14 @@ class Music(commands.Cog):
                     result = song if re.match(regex, song) is not None else self.get_song(song, loop)  # Gets a video ID for the song if the song is not a url
                     player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx, stream=True)  # Creates a player
                     queue.put(player)  # Adds a song to the servers queue system
-                    return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
+                    found_video = False
+                    break
                 except TypeError:
                     return await ctx.send("Something went wrong! Please try again. If this issue continues then please contact support!")
                 except youtube_dl.utils.DownloadError:
-                    continue
+                    found_video = True
+        if found_video:
+            return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
         return await ctx.send("Sorry but I do not have access to stream that video!")
 
     @commands.command(name='Pause', help="Pauses the current song", usage="Pause")
