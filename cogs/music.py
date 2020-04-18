@@ -844,7 +844,7 @@ class Music(commands.Cog):
         embed.set_footer(text=f"{self.bot.command_prefix}ValidPermissions will show you what each permission does")
         await ctx.send(embed=embed)
 
-    @commands.command(name="Settings", aliases=['S'], help="", usage="Settings <setting>")
+    @commands.command(name="Settings", aliases=['S'], help="Toggle a setting to be on or off!", usage="Settings <setting>")
     async def settings(self, ctx, setting):
         setting = setting.lower()
         if setting in ['autoplaylist', 'auto', 'playlist', 'ap']:
