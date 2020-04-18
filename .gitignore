@@ -8,3 +8,6 @@ saved_queues.db
 *.db
 *.webm
 
+databases/permissions.db
+databases/saved_queues.db
+*.db
