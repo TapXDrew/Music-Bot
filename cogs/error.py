@@ -1,6 +1,8 @@
 import asyncio
 import traceback
 import sys
+
+import discord
 from discord.ext import commands
 
 
@@ -19,7 +21,7 @@ class CommandErrorHandler(commands.Cog):
         if hasattr(ctx.command, 'on_error'):
             return
         
-        ignored = (commands.CommandNotFound, asyncio.exceptions.TimeoutError)
+        ignored = (commands.CommandNotFound, asyncio.exceptions.TimeoutError, discord.ext.commands.errors.CheckFailure)
         error = getattr(error, 'original', error)
         
         if isinstance(error, ignored):

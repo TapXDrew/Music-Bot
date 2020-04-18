@@ -7,14 +7,14 @@ from discord.ext import commands
 
 config = json.load(open('config\\config.json'))
 
-bot = commands.AutoShardedBot(command_prefix=config['bot_prefix'], case_insensitive=True)
+bot = commands.AutoShardedBot(command_prefix=config['Bot']['Prefix'], case_insensitive=True)
 bot.remove_command('help')
 
 bot.home_dir = os.getcwd()
-bot.prefix = config['bot_prefix']
 bot.config = json.load(open('config\\config.json'))
 initial_extensions = [
                     "cogs.music",
+                    "cogs.moderation",
                     "cogs.help",
                     "cogs.error"
                     ]
@@ -43,4 +43,5 @@ async def on_ready():
     print("Discord Version: " + discord.__version__)
     print("------------------------------------")
 
-bot.run(bot.config['bot_token'])
+
+bot.run(bot.config['Bot']['Token'])
