@@ -6,39 +6,41 @@ import discord
 from discord.ext import commands
 
 config = json.load(open('config\\config.json'))
-initial_extensions = ["cogs.music", "cogs.help", "cogs.error"]
+
+bot = commands.AutoShardedBot(command_prefix=config['bot_prefix'], case_insensitive=True)
+bot.remove_command('help')
+
+bot.home_dir = os.getcwd()
+bot.prefix = config['bot_prefix']
+bot.config = json.load(open('config\\config.json'))
+initial_extensions = [
+                    "cogs.music",
+                    "cogs.help",
+                    "cogs.error"
+                    ]
+
+if __name__ == '__main__':
+    for extension in initial_extensions:
+        try:
+            bot.load_extension(extension)
+        except Exception as e:
+            print(f"Failed to load extension {extension}.")
+            traceback.print_exc()
+    # Optional, will need to pip-install
+    bot.load_extension("jishaku")
 
 
-class DiscordBot(commands.AutoShardedBot):
-    def __init__(self):
-        super().__init__(command_prefix="?")
-        self.remove_command('help')
-
-        self.home_dir = os.getcwd()
-        self.prefix = config['bot_prefix']
-        self.config = json.load(open('config\\config.json'))
-        self.load_extensions()
-
-    async def on_message(self, message):
-        await self.process_commands(message)
-
-    async def on_ready(self):
-        print("------------------------------------")
-        print("Bot Name: " + self.user.name)
-        print("Bot ID: " + str(self.user.id))
-        print("Discord Version: " + discord.__version__)
-        print("------------------------------------")
-
-    def load_extensions(self):
-        for extension in initial_extensions:
-            try:
-                self.add_cog(extension)
-            except Exception:
-                print(f"Failed to load extension {extension}.")
-                traceback.print_exc()
-        self.add_cog("jishaku")
+@bot.event
+async def on_message(message):
+    await bot.process_commands(message)
 
 
-if __name__ == "__main__":
-    bot = DiscordBot()
-    bot.run(config['bot_token'])
+@bot.event
+async def on_ready():
+    print("------------------------------------")
+    print("Bot Name: " + bot.user.name)
+    print("Bot ID: " + str(bot.user.id))
+    print("Discord Version: " + discord.__version__)
+    print("------------------------------------")
+
+bot.run(bot.config['bot_token'])

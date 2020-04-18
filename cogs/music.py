@@ -146,8 +146,7 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
         ytdl_format_options = {'format': 'bestaudio/best', 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
                                'restrictfilenames': True, 'noplaylist': True, 'nocheckcertificate': True,
                                'ignoreerrors': False, 'logtostderr': False, 'quiet': True, 'no_warnings': True,
-                               'default_search': 'auto', 'source_address': '0.0.0.0',
-                               '-reconnect': 1, '-reconnect_streamed': 1, '-reconnect_delay_max': 5}
+                               'default_search': 'auto', 'source_address': '0.0.0.0'}
         ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
@@ -380,7 +379,7 @@ class Music(commands.Cog):
                     result = song if re.match(regex, song) is not None else self.get_song(song, loop)  # Gets a video ID for the song if the song is not a url
                     player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx, stream=True)  # Creates a player
                     queue.put(player)  # Adds a song to the servers queue system
-                    found_video = False
+                    found_video = True
                     break
                 except TypeError:
                     return await ctx.send("Something went wrong! Please try again. If this issue continues then please contact support!")
