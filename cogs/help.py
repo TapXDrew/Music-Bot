@@ -26,7 +26,7 @@ class Help(commands.Cog):
                 if command.name in ['jishaku'] or command.hidden:
                     continue
                 embed.add_field(name=command.qualified_name, value=command.help, inline=False)
-            embed.set_footer(text="<> are required command parameters while [] is optional")
+            embed.set_footer(text=f"Look at more info on a command with {self.bot.command_prefix}Help <command>")
             await ctx.send(embed=embed)
         else:
             for command in self.bot.commands:
