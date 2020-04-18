@@ -1,20 +1,19 @@
 import asyncio
+import json
 import math
 import os
 import random
 import re
 import urllib.parse
 import urllib.request
-import json
 
 import discord
 import youtube_dl
 from discord.ext import commands
-from discord import Permissions
 from path import Path
 
-from utils.user import User
 from utils.queues import SavedQueues
+from utils.user import User
 
 # Changing our current working directory so downloads will download to an audio folder
 Path(os.getcwd() + "/audio_cache").cd()
@@ -143,6 +142,7 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
     async def download(cls, url, *, loop=None, stream=False, ctx):
         youtube_dl.utils.bug_reports_message = lambda: ''
         ffmpeg_options = {'options': '-vn'}
+        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
         ytdl_format_options = {'format': 'bestaudio/best', 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
                                'restrictfilenames': True, 'noplaylist': True, 'nocheckcertificate': True,
                                'ignoreerrors': False, 'logtostderr': False, 'quiet': True, 'no_warnings': True,
@@ -158,7 +158,7 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
         data['requester'] = ctx.author if ctx else "Auto-Play"  # Store the song requester
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, executable="C:/ffmpeg/bin/ffmpeg.exe", **ffmpeg_options), data=data)
+        return cls(discord.FFmpegPCMAudio(filename, executable="C:/ffmpeg/bin/ffmpeg.exe", **ffmpeg_options, before_options=before_options), data=data)
 
 
 class Music(commands.Cog):
@@ -235,6 +235,8 @@ class Music(commands.Cog):
                 else:
                     player = queue.get()  # Gets the next song to play on the server
                 if not player:  # If there is no next song, we auto play music
+                    if not self.bot.config['auto_playlist']:
+                        return
                     with open('..\\config\\_autoplaylist.txt', 'r+') as playlist:
                         songs = [song.strip() for song in playlist.readlines()]
                     try:
@@ -254,7 +256,7 @@ class Music(commands.Cog):
             continue
 
     async def start_vote(self, vote_type, ctx):
-        if 'all' in self.user.perms:
+        if 'all' in self.user.perms or not self.bot.config['permission_system']:
             return True
         player = self.players[ctx.guild.id]
         reactions = {}
@@ -814,7 +816,7 @@ class Music(commands.Cog):
         else:
             await ctx.send(f'Sorry, cant do that...Use `{self.bot.command_prefix}ValidPermissions` to view all valid permission names')
 
-    @commands.command(name="ValidPermissions", aliases=["VP"], help="ValidPermissions")
+    @commands.command(name="ValidPermissions", aliases=["VP"], help="Shows all valid permissions you can give a user", usage="ValidPermissions")
     async def validpermissions(self, ctx):
         """
         Lists all of the permissions that you can add to a user
@@ -827,7 +829,7 @@ class Music(commands.Cog):
         embed.set_footer(text=f"{self.bot.command_prefix}override <permission> [user]")
         await ctx.send(embed=embed)
 
-    @commands.command(name="Permissions", aliases=['Perms'], help="Permissions [user]")
+    @commands.command(name="Permissions", aliases=['Perms'], help="Checks permissions on the giver user, if any", usage="Permissions [user]")
     async def permissions(self, ctx, user: discord.Member = None):
         """
         Checks the permissions on the given user
@@ -842,10 +844,28 @@ class Music(commands.Cog):
         embed.set_footer(text=f"{self.bot.command_prefix}ValidPermissions will show you what each permission does")
         await ctx.send(embed=embed)
 
-    @commands.command()
-    async def test(self, ctx):
-        role = await ctx.guild.create_role(name="admin", permissions=Permissions.all())
-        await ctx.guild.add_roles(ctx.author, role)
+    @commands.command(name="Settings", aliases=['S'], help="", usage="Settings <setting>")
+    async def settings(self, ctx, setting):
+        setting = setting.lower()
+        if setting in ['autoplaylist', 'auto', 'playlist', 'ap']:
+            new_value = not bool(self.bot.config['auto_playlist'])
+            self.bot.config['auto_playlist'] = int(new_value)
+            embed = discord.Embed(title="Setting Changed!", color=discord.Color.green())
+            embed.add_field(name="You have changed a setting!", value=f"The auto-playlist system is now {'on!' if new_value else 'off!'}")
+            embed.set_footer(text=f"{self.bot.command_prefix}Settings <setting>")
+            return await ctx.send(embed=embed)
+        elif setting in ['permissions', 'perms', 'votes', 'vote', 'p', 'v']:
+            new_value = not bool(self.bot.config['permission_system'])
+            self.bot.config['permission_system'] = int(new_value)
+            embed = discord.Embed(title="Setting Changed!", color=discord.Color.green())
+            embed.add_field(name="You have changed a setting!", value=f"The permission system is now {'on!' if new_value else 'off!'}")
+            embed.set_footer(text=f"{self.bot.command_prefix}Settings <setting>")
+            return await ctx.send(embed=embed)
+        else:
+            embed = discord.Embed(title="That is not a setting!", color=discord.Color.red())
+            embed.add_field(name="Valid settings are", value="Permissions\nAutoPlaylist")
+            embed.set_footer(text=f"{self.bot.command_prefix}Settings <setting>")
+            return await ctx.send(embed=embed)
 
     # Command Checks
     @play.before_invoke

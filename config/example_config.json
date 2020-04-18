@@ -1,5 +1,7 @@
 {
     "bot_token": "",
-    "bot_prefix": "!",
-    "bot_invite":  ""
+    "bot_prefix": "",
+    "bot_invite":  "",
+    "permission_system": 1,
+    "auto_playlist": 1
 }
