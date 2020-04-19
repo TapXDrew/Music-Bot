@@ -1,6 +1,6 @@
 import sqlite3
 
-DATABASE = '..\\databases\\servers.db'
+DATABASE = '../databases/servers.db'
 TABLE = 'ServerInfo'
 
 

@@ -16,7 +16,7 @@ from utils.queues import SavedQueues
 from utils.servers import Server
 from utils.user import User
 
-config = json.load(open('config\\config.json'))
+config = json.load(open('config/config.json'))
 # Changing our current working directory so downloads will download to an audio folder
 Path(os.getcwd() + "/audio_cache").cd()
 
@@ -253,7 +253,7 @@ class Music(commands.Cog):
                 if not player:  # If there is no next song, we auto play music
                     if not self.bot.config["Settings"]['AutoPlaylist']:
                         return
-                    with open('..\\config\\_autoplaylist.txt', 'r+') as playlist:
+                    with open('../config/_autoplaylist.txt', 'r+') as playlist:
                         songs = [song.strip() for song in playlist.readlines()]
                     try:
                         ctx.author = None

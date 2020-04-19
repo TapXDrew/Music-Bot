@@ -1,9 +1,9 @@
 import sqlite3
 import json
 
-DATABASE = '..\\databases\\permissions.db'
+DATABASE = '../databases/permissions.db'
 TABLE = 'UserPermissions'
-perms = json.load(open("utils\\permissions.json"))
+perms = json.load(open("utils/permissions.json"))
 
 
 def index_replace(text, index=0, replacement=''):

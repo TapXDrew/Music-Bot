@@ -5,15 +5,16 @@ import traceback
 import discord
 from discord.ext import commands
 
-config = json.load(open('config\\config.json'))
+config = json.load(open('config/config.json'))
 
 bot = commands.AutoShardedBot(command_prefix=config['Bot']['Prefix'], case_insensitive=True)
 bot.remove_command('help')
 
 bot.home_dir = os.getcwd()
-bot.config = json.load(open('config\\config.json'))
+bot.config = json.load(open('config/config.json'))
 initial_extensions = [
                     "cogs.music",
+                    "cogs.music_moderation",
                     "cogs.moderation",
                     "cogs.help",
                     "cogs.error"

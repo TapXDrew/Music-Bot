@@ -1,6 +1,6 @@
 import sqlite3
 
-DATABASE = '..\\databases\\saved_queues.db'
+DATABASE = '../databases/saved_queues.db'
 TABLE = 'Playlists'
 
 
