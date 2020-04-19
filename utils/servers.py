@@ -1,6 +1,7 @@
+import os
 import sqlite3
 
-DATABASE = '../databases/servers.db'
+DATABASE = os.getcwd()+'/databases/servers.db'
 TABLE = 'ServerInfo'
 
 

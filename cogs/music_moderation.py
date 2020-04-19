@@ -1,4 +1,5 @@
 import json
+import os
 
 import discord
 from discord.ext import commands
@@ -6,7 +7,7 @@ from discord.ext import commands
 from utils.servers import Server
 from utils.user import User
 
-config = json.load(open('../config/config.json'))
+config = json.load(open(os.getcwd()+'/config/config.json'))
 
 
 class MusicModeration(commands.Cog):
@@ -60,7 +61,7 @@ class MusicModeration(commands.Cog):
         Lists all of the permissions that you can add to a user
         :param ctx: Information on the context of where the command was called
         """
-        perms = json.load(open('../utils/permissions.json'))
+        perms = json.load(open(os.getcwd()+'/utils/permissions.json'))
         embed = discord.Embed(title="Valid Permissions", color=self.SuccessEmbed)
         for name, perm in perms["Permissions"]["CommandBypasses"].items():
             embed.add_field(name=name, value=perm, inline=False)

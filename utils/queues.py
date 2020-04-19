@@ -1,6 +1,7 @@
+import os
 import sqlite3
 
-DATABASE = '../databases/saved_queues.db'
+DATABASE = os.getcwd()+'/databases/saved_queues.db'
 TABLE = 'Playlists'
 
 

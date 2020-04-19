@@ -16,9 +16,7 @@ from utils.queues import SavedQueues
 from utils.servers import Server
 from utils.user import User
 
-config = json.load(open('config/config.json'))
-# Changing our current working directory so downloads will download to an audio folder
-Path(os.getcwd() + "/audio_cache").cd()
+config = json.load(open(os.getcwd()+'/config/config.json'))
 
 regex = re.compile(
     r'^(?:http|ftp)s?://'  # http:// or https://
@@ -160,7 +158,7 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
         data['requester'] = ctx.author if ctx else "Auto-Play"  # Store the song requester
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, executable="C:/ffmpeg/bin/ffmpeg.exe", **ffmpeg_options,
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options,
                                           before_options=before_options), data=data)
 
 
@@ -253,7 +251,7 @@ class Music(commands.Cog):
                 if not player:  # If there is no next song, we auto play music
                     if not self.bot.config["Settings"]['AutoPlaylist']:
                         return
-                    with open('../config/_autoplaylist.txt', 'r+') as playlist:
+                    with open(os.getcwd()+'/config/_autoplaylist.txt', 'r+') as playlist:
                         songs = [song.strip() for song in playlist.readlines()]
                     try:
                         ctx.author = None

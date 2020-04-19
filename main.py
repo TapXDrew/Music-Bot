@@ -5,7 +5,7 @@ import traceback
 import discord
 from discord.ext import commands
 
-config = json.load(open('config/config.json'))
+config = json.load(open(os.getcwd()+'/config/config.json'))
 
 bot = commands.AutoShardedBot(command_prefix=config['Bot']['Prefix'], case_insensitive=True)
 bot.remove_command('help')

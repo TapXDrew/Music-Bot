@@ -1,4 +1,5 @@
 import json
+import os
 import time
 
 import discord
@@ -6,7 +7,7 @@ from discord.ext import commands
 
 from utils.moderation import User
 
-config = json.load(open('../config/config.json'))
+config = json.load(open(os.getcwd()+'/config/config.json'))
 
 
 class Moderation(commands.Cog):
