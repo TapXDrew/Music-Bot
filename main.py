@@ -13,11 +13,11 @@ bot.remove_command('help')
 bot.home_dir = os.getcwd()
 bot.config = json.load(open('config/config.json'))
 initial_extensions = [
-                    "cogs.music",
                     "cogs.music_moderation",
                     "cogs.moderation",
                     "cogs.help",
-                    "cogs.error"
+                    "cogs.error",
+                    "cogs.music"
                     ]
 
 if __name__ == '__main__':

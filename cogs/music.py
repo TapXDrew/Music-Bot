@@ -18,6 +18,9 @@ from utils.user import User
 
 config = json.load(open(os.getcwd()+'/config/config.json'))
 
+Path(os.getcwd()+'/audio_cache').cd()
+
+
 regex = re.compile(
     r'^(?:http|ftp)s?://'  # http:// or https://
     r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
@@ -117,6 +120,7 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
         self.ctx = data.get('ctx')
         self.requester = data.get('requester')
         self.channel = self.ctx.channel
+        self.filename = data.get('filename')
 
         self.repeat = False
 
@@ -158,8 +162,8 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
         data['requester'] = ctx.author if ctx else "Auto-Play"  # Store the song requester
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options,
-                                          before_options=before_options), data=data)
+        data['filename'] = filename
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 
 class Music(commands.Cog):
@@ -236,22 +240,25 @@ class Music(commands.Cog):
                 await asyncio.sleep(3)
                 continue
             else:
-                if not self.play_status[ctx.guild.id]:
+                try:
+                    if not self.play_status[ctx.guild.id]:
+                        return
+                    elif player and player.repeat:
+                        result = self.get_song(player.title)  # Gets a video ID for the song
+                        player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx)  # Creates a player
+                    elif queue.repeat:
+                        result = self.get_song(player.title)  # Gets a video ID for the song
+                        player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx)  # Creates a player
+                        queue.put(player)
+                        player = queue.get()
+                    else:
+                        player = queue.get()  # Gets the next song to play on the server
+                except youtube_dl.utils.DownloadError:
                     return
-                elif player and player.repeat:
-                    result = self.get_song(player.title)  # Gets a video ID for the song
-                    player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx)  # Creates a player
-                elif queue.repeat:
-                    result = self.get_song(player.title)  # Gets a video ID for the song
-                    player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx)  # Creates a player
-                    queue.put(player)
-                    player = queue.get()
-                else:
-                    player = queue.get()  # Gets the next song to play on the server
                 if not player:  # If there is no next song, we auto play music
                     if not self.bot.config["Settings"]['AutoPlaylist']:
                         return
-                    with open(os.getcwd()+'/config/_autoplaylist.txt', 'r+') as playlist:
+                    with open(self.bot.home_dir+'/config/_autoplaylist.txt', 'r+') as playlist:
                         songs = [song.strip() for song in playlist.readlines()]
                     try:
                         ctx.author = None
@@ -260,12 +267,10 @@ class Music(commands.Cog):
                         continue
                     return
                 else:  # There is still a song on queue so we will now play it
-                    self.players[
-                        ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
-                    ctx.guild.voice_client.play(player)  # Plays audio in the voice chat
+                    self.players[ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
+                    ctx.guild.voice_client.play(player, after=lambda player: os.remove(self.players[ctx.guild.id].filename))  # Plays audio in the voice chat
                     embed = discord.Embed(color=self.SuccessEmbed)
-                    embed.add_field(name=f"{player.title} is now playing!", value=f"Next Up: {queue.next_up()}",
-                                    inline=False)
+                    embed.add_field(name=f"{player.title} is now playing!", value=f"Next Up: {queue.next_up()}", inline=False)
                     embed.add_field(name=f"Song length", value=player.duration, inline=False)
                     embed.set_footer(text=f"Queue Length: {len(queue.queue)}")
                     await ctx.send(embed=embed)
@@ -408,18 +413,15 @@ class Music(commands.Cog):
         async with ctx.typing():
             for loop in range(5):
                 try:
-                    result = song if re.match(regex, song) is not None else self.get_song(song,
-                                                                                          loop)  # Gets a video ID for the song if the song is not a url
-                    player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx,
-                                                              stream=True)  # Creates a player
+                    result = song if re.match(regex, song) is not None else self.get_song(song, loop)  # Gets a video ID for the song if the song is not a url
+                    player = await AudioSourcePlayer.download(result, loop=self.bot.loop, ctx=ctx, stream=False)  # Creates a player
                     queue.put(player)  # Adds a song to the servers queue system
                     found_video = True
                     break
                 except TypeError:
-                    return await ctx.send(
-                        "Something went wrong! Please try again. If this issue continues then please contact support!")
+                    return await ctx.send("Something went wrong! Please try again. If this issue continues then please contact support!")
                 except youtube_dl.utils.DownloadError:
-                    found_video = True
+                    found_video = False
         if found_video:
             return await self.play_next_song(ctx, queue_type)  # Starts to play queued songs
         return await ctx.send("Sorry but I do not have access to stream that video!")
