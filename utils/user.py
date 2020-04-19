@@ -4,7 +4,7 @@ import json
 
 DATABASE = os.getcwd()+'/databases/permissions.db'
 TABLE = 'UserPermissions'
-perms = json.load(open(os.getcwd()+"utils/permissions.json"))
+perms = json.load(open(os.getcwd()+"/utils/permissions.json"))
 
 
 def index_replace(text, index=0, replacement=''):
