@@ -355,7 +355,6 @@ class Music(commands.Cog):
     # noinspection PyTypeChecker
     async def auto_join_channels(self):
         for guild in self.bot.guilds:
-            print(guild.name)
             server = Server(bot=self.bot, guild=guild)
             if server.auto_connect:
                 await self.join(ctx=None, channel=server.auto_connect, auto_connect=guild)

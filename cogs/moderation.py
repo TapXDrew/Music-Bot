@@ -268,7 +268,7 @@ class Moderation(commands.Cog):
         embed.add_field(name=f"{user.name}'s Warnings", value="\n".join([f"{int(index) + 1}: {warn}" for index, warn in userWarns.warns.items()]) if userWarns.warns else "None")
         await ctx.send(embed=embed)
 
-    @commands.command(name="Remove", aliases=[], help="Removes a users warning", usage="Remove <user> <ID>")
+    @commands.command(name="RemoveWarm", aliases=[], help="Removes a users warning", usage="RemoveWarn <user> <ID>")
     @commands.has_permissions(manage_guild=True)
     async def remove_CMD(self, ctx, user: discord.Member, warn_id: int):
         """
