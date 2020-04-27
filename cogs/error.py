@@ -21,7 +21,7 @@ class CommandErrorHandler(commands.Cog):
         if hasattr(ctx.command, 'on_error'):
             return
         
-        ignored = (commands.CommandNotFound, asyncio.exceptions.TimeoutError, discord.ext.commands.errors.CheckFailure)
+        ignored = (commands.CommandNotFound, TimeoutError, discord.ext.commands.errors.CheckFailure)
         error = getattr(error, 'original', error)
         
         if isinstance(error, ignored):

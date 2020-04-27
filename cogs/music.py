@@ -146,7 +146,7 @@ class AudioSourcePlayer(discord.PCMVolumeTransformer):  # This is our video down
     async def download(cls, url, *, loop=None, stream=False, ctx):
         youtube_dl.utils.bug_reports_message = lambda: ''
         ffmpeg_options = {'options': '-vn'}
-        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+        # before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
         ytdl_format_options = {'format': 'bestaudio/best', 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
                                'restrictfilenames': True, 'noplaylist': True, 'nocheckcertificate': True,
                                'ignoreerrors': False, 'logtostderr': False, 'quiet': True, 'no_warnings': True,
@@ -268,7 +268,7 @@ class Music(commands.Cog):
                     return
                 else:  # There is still a song on queue so we will now play it
                     self.players[ctx.guild.id] = player  # Either adds the player to the dict using the server ID or updates the current player
-                    ctx.guild.voice_client.play(player, after=lambda player: os.remove(self.players[ctx.guild.id].filename))  # Plays audio in the voice chat
+                    ctx.guild.voice_client.play(player, after=lambda _: os.remove(self.players[ctx.guild.id].filename))  # Plays audio in the voice chat
                     embed = discord.Embed(color=self.SuccessEmbed)
                     embed.add_field(name=f"{player.title} is now playing!", value=f"Next Up: {queue.next_up()}", inline=False)
                     embed.add_field(name=f"Song length", value=player.duration, inline=False)
@@ -355,9 +355,11 @@ class Music(commands.Cog):
     # noinspection PyTypeChecker
     async def auto_join_channels(self):
         for guild in self.bot.guilds:
+            print(guild.name)
             server = Server(bot=self.bot, guild=guild)
             if server.auto_connect:
                 await self.join(ctx=None, channel=server.auto_connect, auto_connect=guild)
+        return
 
     # Commands
     @commands.command(name='Join', help="Joins the bot to either your voice channel or a specified channel",
@@ -369,16 +371,18 @@ class Music(commands.Cog):
         :param channel: If a channel is specified then we will join it, otherwise we join the current voice channel the message author is in, if any
         :param auto_connect: Are we auto-joining a channel
         """
-        if auto_connect:
+        if ctx.guild.voice_client and channel:
+            await ctx.guild.voice_client.move_to(channel)
+        elif auto_connect:
             auto = self.bot.get_channel(channel)
             return await auto.connect()
         elif channel:
             return await channel.connect()
+        elif ctx.author.voice:
+            return await ctx.author.voice.channel.connect()  # Joins the VC that the command author is in
         elif self.server.auto_connect:
             auto = self.bot.get_channel(self.server.auto_connect)
             return await auto.connect()
-        elif ctx.author.voice:
-            return await ctx.author.voice.channel.connect()  # Joins the VC that the command author is in
         else:
             embed = discord.Embed(title="Failed to join a voice channel", color=self.FailEmbed)
             embed.add_field(name="I cant play music if i cant talk!",

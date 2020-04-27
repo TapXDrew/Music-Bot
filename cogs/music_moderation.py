@@ -87,6 +87,7 @@ class MusicModeration(commands.Cog):
 
     @commands.command(name="Settings", aliases=['S'], help="Toggle a setting to be on or off!",
                       usage="Settings <setting>")
+    @commands.has_permissions(manage_guild=True)
     async def settings(self, ctx, setting):
         """
         Toggle a setting in the config
@@ -118,6 +119,7 @@ class MusicModeration(commands.Cog):
 
     @commands.command(name="AutoJoin", aliases=['AJ'], help="Set a specific voice channel for me to auto-join!",
                       usage="AutoJoin <channel>")
+    @commands.has_permissions(manage_guild=True)
     async def auto_join(self, ctx, channel: discord.VoiceChannel):
         """
         Sets the bot to join a given channel when it restarts or when the !play command is used and the bot is not yet in a channel
@@ -129,6 +131,7 @@ class MusicModeration(commands.Cog):
 
     @commands.command(name="Whitelist", aliases=['WL'], usage="Whitelist <channel>",
                       help="Whitelist a channel for the bot to be used in!")
+    @commands.has_permissions(manage_guild=True)
     async def whitelist(self, ctx, channel: discord.TextChannel):
         """
         Sets the servers whitelist channels. If any channels are in the whitelist, the bot can be used in those specific channels. Otherwise, the bot can be used anywhere
@@ -140,6 +143,7 @@ class MusicModeration(commands.Cog):
 
     @commands.command(name="UnWhitelist", aliases=['RW', 'UW'], help="Remove a channel from the whitelist",
                       usage="UnWhitelist <channel>")
+    @commands.has_permissions(manage_guild=True)
     async def unwhitelist(self, ctx, channel: discord.TextChannel):
         """
         Sets the servers whitelist channels. If any channels are in the whitelist, the bot can be used in those specific channels. Otherwise, the bot can be used anywhere
