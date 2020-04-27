@@ -14,6 +14,7 @@ bot.home_dir = os.getcwd()
 bot.config = json.load(open('config/config.json'))
 initial_extensions = [
                     "cogs.music_moderation",
+                    "cogs.moderation",
                     "cogs.help",
                     "cogs.error",
                     "cogs.music"
